@@ -15,6 +15,8 @@ Implement the three methods inside the ConvolutionInterpolator class:
       The kernel size K is not a separate input — it's derived from sigma
       using the ±3σ rule of thumb.
 
+
+
   convolve(image, kernel, **kwargs)
       Convolve a 2D image with a kernel using scipy.signal.convolve2d,
       using the 'mode' keyword argument (default 'same') to control the
@@ -58,7 +60,11 @@ class ConvolutionInterpolator:
         Returns:
             ndarray: K x K kernel, dtype float, normalised to sum to 1.
         """
-        raise NotImplementedError("Implement this method")
+        half = int(np.ceil(3 * sigma))
+        x = np.arange(-half, half + 1)
+        g = np.exp(-(x ** 2) / (2 * sigma ** 2))
+        kernel = np.outer(g, g)
+        return kernel / kernel.sum()
 
     def convolve(self, image, kernel, **kwargs):
         """Convolve a 2D image with a kernel.
@@ -78,7 +84,13 @@ class ConvolutionInterpolator:
             ndarray: Filtered image — same shape as the input under the
             default mode='same', or a different shape for 'valid'/'full'.
         """
-        raise NotImplementedError("Implement this method")
+        return convolve2d(
+            image,
+            kernel,
+            mode=kwargs.get("mode", "same"),
+            boundary=kwargs.get("boundary", "symm"),
+            fillvalue=kwargs.get("fillvalue", 0),
+        )
 
     def interpolate(self, image, **kwargs):
         """Resample a 2D image by a given scale factor.
@@ -96,4 +108,7 @@ class ConvolutionInterpolator:
         Returns:
             ndarray: Resampled image, shape scaled by scale_factor.
         """
-        raise NotImplementedError("Implement this method")
+        scale_factor = kwargs.get('scale_factor', 0.5)
+        order        = kwargs.get('order', 0)
+        return rescale(image, scale_factor, order=order,
+                       anti_aliasing=False, mode='reflect')
